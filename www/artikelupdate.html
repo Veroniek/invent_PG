@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    -->
+    <meta charset="utf-8" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" />
+    <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline'; style-src 'self' 'unsafe-inline'; media-src *" />
+    
+    <link rel="stylesheet" type="text/css" href="css/index.css" />
+    <link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.5.min.css">
+    <link rel="stylesheet" type="text/css" href="css/jquery.mobile.structure-1.4.5.min.css">    
+          
+    <script type="text/javascript" src="js/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="js/jquery.mobile-1.4.5.js"></script>    
+    <script type="text/javascript" src="js/index.js"></script>
+    <script type="text/javascript" src="cordova.js"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function(){
+            get_artikel();
+        });
+    </script>
+    
+	<title>Kassa</title>
+</head>
+
+<body onload="check_login();">
+    <div data-role="page" data-add-back-btn="true">
+        <div data-role="header">
+            <h1>Kassa - Barcode toevoegen</h1>
+        </div>
+            
+        <div data-role="main" class="ui-content">
+            <form id="updateForm">
+                <div class="ui-field-contain">
+                    <div id="artikel"></div>
+                
+                    
+                    <label for="fldbarcode">Barcode:</label>
+                    <input type="text" name="fldbarcode" id="fldbarcode" placeholder="Barcode..." value="">
+                    <div align="right"><button id="btnbarcode" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-inline="true">Scan</button></div>
+                    
+                    <label for="fldbarcodedeel">Barcode deel:</label>
+                    <input type="text" name="fldbarcodedeel" id="fldbarcodedeel" placeholder="Barcode deel..." value="">
+                    <div align="right"><button id="btnbarcodedeel" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" data-inline="true">Scan</button></div>
+                </div>
+                
+                <input type="submit" data-inline="true" value="Opslaan">
+                <input id="btncancel" type="button" data-inline="true" value="Annuleren">
+                
+                <div id="errorMsg"></div>
+                
+            </form>
+        </div>
+    </div>
+</body>
+    
+<script type="text/javascript">
+
+$('#updateForm').submit(function(){
+
+	check_login();
+    
+    var postData = "id_art=" + getParameterByName("id_art") + "&barcode=" + $("#fldbarcode").val() + "&barcode_deel=" + $("#fldbarcodedeel").val();
+    
+    $("div#errorMsg").html("");
+	$.ajax({
+		type: 'POST',
+		data: postData,
+		dataType: 'jsonp',
+		jsonp : "callback", 
+		jsonpCallback: "artikelupdate_cb", 
+		crossDomain: true,
+		url: 'http://centralerotsaert.ddns.net/artikelupdate.php',
+		cache: false
+   
+	});
+	
+    return false;
+});
+    
+$("#btncancel").click(function() {
+    window.location="artikelsearch.html";
+});
+
+function artikelupdate_cb(rtndata) {  
+    
+    var ret = rtndata.retval;
+    
+	if(ret == "true") {
+        $("div#errorMsg").html("Opslaan gelukt.");
+	} else {
+		$("div#errorMsg").html("Fout bij bewaren!");
+	}
+};
+
+</script>
+    
+<script type="text/javascript">
+	$("#btnbarcode").click(function() {
+        scan_barcode();
+        return false;
+	});
+
+	$("#btnbarcodedeel").click(function() {
+        scan_barcode_deel();
+        return false;
+	});
+
+</script>
+
+<script type="text/javascript">
+
+function getParameterByName(name) {
+    
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+};
+    
+function get_artikel(){
+    
+    var postData = "id_art=" + getParameterByName("id_art");
+    
+	$.ajax({
+        type: 'POST',
+		data: postData,
+		dataType: 'jsonp',
+		jsonp : "callback", 
+		jsonpCallback: "get_artikel_cb", 
+		crossDomain: true,
+		url: 'http://centralerotsaert.ddns.net/getartikel.php',
+		cache: false
+	});
+	
+	return false;
+};
+     
+function get_artikel_cb(rtndata) {  
+    
+    $("#fldbarcode").val(rtndata.barcode);
+	$("#fldbarcodedeel").val(rtndata.barcode_deel);
+	$("div#artikel").html("<h2>" + rtndata.code + " - " + rtndata.desc + "</h2>");
+
+};
+    
+function scan_barcode(){
+    
+    cordova.plugins.barcodeScanner.scan(function (result) {
+        
+		$("#fldbarcode").val(result.text);
+      	},
+      	function (error) {
+          alert("Scanning failed: " + error);
+      	}
+      );
+
+      return false;
+};
+
+function scan_barcode_deel(){
+
+      cordova.plugins.barcodeScanner.scan(function (result) {
+		$("#fldbarcodedeel").val(result.text);
+      	},
+      	function (error) {
+          alert("Scanning failed: " + error);
+      	}
+      );
+
+      return false;
+};
+</script>
+</html>
